@@ -1,0 +1,89 @@
+---
+title: "ggplot2的应用"
+author:
+  - 王卓凡
+documentclass: ctexart
+output:
+  rticles::ctex:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+classoption: "hyperref,"
+---
+
+# 绘制病例数前十国家的曲线图
+```{r}
+library(nCov2019)
+x <- get_nCov2019()
+warnings('off')
+```
+
+```{r}
+xx <- load_nCov2019()
+d <- xx['global',]
+c10 <- c("中国","美国","意大利","西班牙","德国","法国","伊朗","英国","瑞士","比利时")
+dd <- with(d,d[which(country%in%c10),])
+warnings('off')
+```
+
+```{r}
+library(ggrepel)
+ggplot(dd, aes(time, as.numeric(cum_confirm), group=country,
+color=country)) +
+geom_point() + geom_line() +
+geom_text_repel(aes(label=country), data=dd[dd$time=="2020-03-23",],hjust=1) +
+theme_minimal(base_size = 14) + theme(legend.position='none') +
+xlab(NULL) + ylab(NULL)
+warnings('off')
+```
+
+# 绘制病例数前十国家的变化率曲线
+
+```{r}
+ndata <- NA
+for (i in c10) {
+  data <- subset(dd,dd$country==i)
+  diff <- diff(data$cum_confirm)
+  length <- length(diff)
+  lv <- diff/data$cum_confirm[1:length]
+  lv <- c(lv,NA)
+  data$diff <- lv
+  temp<- data
+  ndata <- rbind(ndata,temp)
+}
+ndata <- ndata[-1,]
+warnings('off')
+```
+
+```{r}
+ggplot(ndata, aes(time, as.numeric(diff), group=country,
+color=country)) +
+geom_point() + geom_line() +
+geom_text_repel(aes(label=country), data=ndata[ndata$time=="2020-03-23",],hjust=1) +
+theme_minimal(base_size = 14) + theme(legend.position='none') +
+xlab(NULL) + ylab(NULL)
+warnings('off')
+```
+
+
+# 绘制世界疫情动态变化地图
+
+```{r}
+library(nCov2019)
+library(chinamap)
+library(magick)
+
+y <- load_nCov2019()
+d <- c(paste0("2020-03-0", 1:9),paste0("2020-03-",10:28))
+img <- image_graph(600, 450, res = 96)
+out <- lapply(d, function(date){
+  p <- plot(y, date=date,
+            label=FALSE, continuous_scale=FALSE)
+  print(p)
+})
+dev.off()
+
+animation <- image_animate(img, fps = 2)
+image_write(animation, "ncov2019.gif")
+warnings('off')
+```
